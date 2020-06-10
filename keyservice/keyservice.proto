@@ -9,7 +9,9 @@ message Key {
 		GcpKmsKey gcp_kms_key = 3;
 		AzureKeyVaultKey azure_keyvault_key = 4;
 		VaultKey vault_key = 5;
-		AgeKey age_key = 6;
+		BarbicanKey barbican_key = 6;
+		AgeKey age_key = 7;
+		
 	}
 }
 
@@ -42,6 +44,10 @@ message AzureKeyVaultKey {
 
 message AgeKey {
 	string recipient = 1;
+}
+
+message BarbicanKey {
+	string secret_href = 1;
 }
 
 message EncryptRequest {

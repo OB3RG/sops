@@ -14,6 +14,7 @@ import (
 	"github.com/getsops/sops/v3"
 	"github.com/getsops/sops/v3/age"
 	"github.com/getsops/sops/v3/azkv"
+	"github.com/getsops/sops/v3/barbican"
 	"github.com/getsops/sops/v3/gcpkms"
 	"github.com/getsops/sops/v3/hcvault"
 	"github.com/getsops/sops/v3/kms"
@@ -129,13 +130,14 @@ type configFile struct {
 }
 
 type keyGroup struct {
-	Merge   []keyGroup
-	KMS     []kmsKey
-	GCPKMS  []gcpKmsKey  `yaml:"gcp_kms"`
-	AzureKV []azureKVKey `yaml:"azure_keyvault"`
-	Vault   []string     `yaml:"hc_vault"`
-	Age     []string     `yaml:"age"`
-	PGP     []string
+	Merge    []keyGroup
+	KMS      []kmsKey
+	GCPKMS   []gcpKmsKey   `yaml:"gcp_kms"`
+	AzureKV  []azureKVKey  `yaml:"azure_keyvault"`
+	Barbican []barbicanKey `yaml:"barbican"`
+	Vault    []string      `yaml:"hc_vault"`
+	Age      []string      `yaml:"age"`
+	PGP      []string
 }
 
 type gcpKmsKey struct {
@@ -153,6 +155,10 @@ type azureKVKey struct {
 	VaultURL string `yaml:"vaultUrl"`
 	Key      string `yaml:"key"`
 	Version  string `yaml:"version"`
+}
+
+type barbicanKey struct {
+	SecretHref string `yaml:"secret_href"`
 }
 
 type destinationRule struct {
@@ -178,6 +184,7 @@ type creationRule struct {
 	GCPKMS                  interface{} `yaml:"gcp_kms"`              // string or []string
 	AzureKeyVault           interface{} `yaml:"azure_keyvault"`       // string or []string
 	VaultURI                interface{} `yaml:"hc_vault_transit_uri"` // string or []string
+	BarbicanSecretHref      string      `yaml:"barbican_secret_href"`
 	KeyGroups               []keyGroup  `yaml:"key_groups"`
 	ShamirThreshold         int         `yaml:"shamir_threshold"`
 	UnencryptedSuffix       string      `yaml:"unencrypted_suffix"`
@@ -358,6 +365,9 @@ func getKeyGroupsFromCreationRule(cRule *creationRule, kmsEncryptionContext map[
 			if err != nil {
 				return nil, err
 			}
+			for _, k := range group.Barbican {
+				keyGroup = append(keyGroup, barbican.NewMasterKeyFromSecretHref(k.SecretHref))
+			}
 			groups = append(groups, keyGroup)
 		}
 	} else {
@@ -418,6 +428,9 @@ func getKeyGroupsFromCreationRule(cRule *creationRule, kmsEncryptionContext map[
 			return nil, err
 		}
 		for _, k := range vaultKeys {
+			keyGroup = append(keyGroup, k)
+		}
+		for _, k := range barbican.MasterKeysFromSecretHref(cRule.BarbicanSecretHref) {
 			keyGroup = append(keyGroup, k)
 		}
 		groups = append(groups, keyGroup)

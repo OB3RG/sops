@@ -2,6 +2,8 @@ module github.com/getsops/sops/v3
 
 go 1.23.0
 
+replace github.com/getsops/sops => /home/oberg/Work/sops/
+
 require (
 	cloud.google.com/go/kms v1.22.0
 	cloud.google.com/go/storage v1.56.1
@@ -22,6 +24,7 @@ require (
 	github.com/getsops/gopgagent v0.0.0-20241224165529-7044f28e491e
 	github.com/google/go-cmp v0.7.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
+	github.com/gophercloud/gophercloud v1.14.1
 	github.com/goware/prefixer v0.0.0-20160118172347-395022866408
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/vault/api v1.20.0
@@ -42,7 +45,7 @@ require (
 	google.golang.org/api v0.248.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c
 	google.golang.org/grpc v1.75.0
-	google.golang.org/protobuf v1.36.8
+	google.golang.org/protobuf v1.36.9
 	gopkg.in/ini.v1 v1.67.0
 )
 

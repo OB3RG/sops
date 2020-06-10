@@ -18,6 +18,7 @@ import (
 	"github.com/getsops/sops/v3"
 	"github.com/getsops/sops/v3/age"
 	"github.com/getsops/sops/v3/azkv"
+	"github.com/getsops/sops/v3/barbican"
 	"github.com/getsops/sops/v3/gcpkms"
 	"github.com/getsops/sops/v3/hcvault"
 	"github.com/getsops/sops/v3/kms"
@@ -43,33 +44,35 @@ type SopsFile struct {
 // in order to allow the binary format to stay backwards compatible over time, but at the same time allow the internal
 // representation SOPS uses to change over time.
 type Metadata struct {
-	ShamirThreshold           int         `yaml:"shamir_threshold,omitempty" json:"shamir_threshold,omitempty"`
-	KeyGroups                 []keygroup  `yaml:"key_groups,omitempty" json:"key_groups,omitempty"`
-	KMSKeys                   []kmskey    `yaml:"kms,omitempty" json:"kms,omitempty"`
-	GCPKMSKeys                []gcpkmskey `yaml:"gcp_kms,omitempty" json:"gcp_kms,omitempty"`
-	AzureKeyVaultKeys         []azkvkey   `yaml:"azure_kv,omitempty" json:"azure_kv,omitempty"`
-	VaultKeys                 []vaultkey  `yaml:"hc_vault,omitempty" json:"hc_vault,omitempty"`
-	AgeKeys                   []agekey    `yaml:"age,omitempty" json:"age,omitempty"`
-	LastModified              string      `yaml:"lastmodified" json:"lastmodified"`
-	MessageAuthenticationCode string      `yaml:"mac" json:"mac"`
-	PGPKeys                   []pgpkey    `yaml:"pgp,omitempty" json:"pgp,omitempty"`
-	UnencryptedSuffix         string      `yaml:"unencrypted_suffix,omitempty" json:"unencrypted_suffix,omitempty"`
-	EncryptedSuffix           string      `yaml:"encrypted_suffix,omitempty" json:"encrypted_suffix,omitempty"`
-	UnencryptedRegex          string      `yaml:"unencrypted_regex,omitempty" json:"unencrypted_regex,omitempty"`
-	EncryptedRegex            string      `yaml:"encrypted_regex,omitempty" json:"encrypted_regex,omitempty"`
-	UnencryptedCommentRegex   string      `yaml:"unencrypted_comment_regex,omitempty" json:"unencrypted_comment_regex,omitempty"`
-	EncryptedCommentRegex     string      `yaml:"encrypted_comment_regex,omitempty" json:"encrypted_comment_regex,omitempty"`
-	MACOnlyEncrypted          bool        `yaml:"mac_only_encrypted,omitempty" json:"mac_only_encrypted,omitempty"`
-	Version                   string      `yaml:"version" json:"version"`
+	ShamirThreshold           int           `yaml:"shamir_threshold,omitempty" json:"shamir_threshold,omitempty"`
+	KeyGroups                 []keygroup    `yaml:"key_groups,omitempty" json:"key_groups,omitempty"`
+	KMSKeys                   []kmskey      `yaml:"kms,omitempty" json:"kms,omitempty"`
+	GCPKMSKeys                []gcpkmskey   `yaml:"gcp_kms,omitempty" json:"gcp_kms,omitempty"`
+	AzureKeyVaultKeys         []azkvkey     `yaml:"azure_kv,omitempty" json:"azure_kv,omitempty"`
+	VaultKeys                 []vaultkey    `yaml:"hc_vault,omitempty" json:"hc_vault,omitempty"`
+	BarbicanKeys              []barbicankey `yaml:"barbican" json:"barbican"`
+	AgeKeys                   []agekey      `yaml:"age,omitempty" json:"age,omitempty"`
+	LastModified              string        `yaml:"lastmodified" json:"lastmodified"`
+	MessageAuthenticationCode string        `yaml:"mac" json:"mac"`
+	PGPKeys                   []pgpkey      `yaml:"pgp,omitempty" json:"pgp,omitempty"`
+	UnencryptedSuffix         string        `yaml:"unencrypted_suffix,omitempty" json:"unencrypted_suffix,omitempty"`
+	EncryptedSuffix           string        `yaml:"encrypted_suffix,omitempty" json:"encrypted_suffix,omitempty"`
+	UnencryptedRegex          string        `yaml:"unencrypted_regex,omitempty" json:"unencrypted_regex,omitempty"`
+	EncryptedRegex            string        `yaml:"encrypted_regex,omitempty" json:"encrypted_regex,omitempty"`
+	UnencryptedCommentRegex   string        `yaml:"unencrypted_comment_regex,omitempty" json:"unencrypted_comment_regex,omitempty"`
+	EncryptedCommentRegex     string        `yaml:"encrypted_comment_regex,omitempty" json:"encrypted_comment_regex,omitempty"`
+	MACOnlyEncrypted          bool          `yaml:"mac_only_encrypted,omitempty" json:"mac_only_encrypted,omitempty"`
+	Version                   string        `yaml:"version" json:"version"`
 }
 
 type keygroup struct {
-	PGPKeys           []pgpkey    `yaml:"pgp,omitempty" json:"pgp,omitempty"`
-	KMSKeys           []kmskey    `yaml:"kms,omitempty" json:"kms,omitempty"`
-	GCPKMSKeys        []gcpkmskey `yaml:"gcp_kms,omitempty" json:"gcp_kms,omitempty"`
-	AzureKeyVaultKeys []azkvkey   `yaml:"azure_kv,omitempty" json:"azure_kv,omitempty"`
-	VaultKeys         []vaultkey  `yaml:"hc_vault" json:"hc_vault"`
-	AgeKeys           []agekey    `yaml:"age" json:"age"`
+	PGPKeys           []pgpkey      `yaml:"pgp,omitempty" json:"pgp,omitempty"`
+	KMSKeys           []kmskey      `yaml:"kms,omitempty" json:"kms,omitempty"`
+	GCPKMSKeys        []gcpkmskey   `yaml:"gcp_kms,omitempty" json:"gcp_kms,omitempty"`
+	AzureKeyVaultKeys []azkvkey     `yaml:"azure_kv,omitempty" json:"azure_kv,omitempty"`
+	VaultKeys         []vaultkey    `yaml:"hc_vault" json:"hc_vault"`
+	BarbicanKeys      []barbicankey `yaml:"barbican,omitempty" json:"barbican,omitempty"`
+	AgeKeys           []agekey      `yaml:"age" json:"age"`
 }
 
 type pgpkey struct {
@@ -114,6 +117,12 @@ type agekey struct {
 	EncryptedDataKey string `yaml:"enc" json:"enc"`
 }
 
+type barbicankey struct {
+	SecretHref       string `yaml:"secret_href" json:"secret_href"`
+	CreatedAt        string `yaml:"created_at" json:"created_at"`
+	EncryptedDataKey string `yaml:"enc" json:"enc"`
+}
+
 // MetadataFromInternal converts an internal SOPS metadata representation to a representation appropriate for storage
 func MetadataFromInternal(sopsMetadata sops.Metadata) Metadata {
 	var m Metadata
@@ -135,6 +144,7 @@ func MetadataFromInternal(sopsMetadata sops.Metadata) Metadata {
 		m.GCPKMSKeys = gcpkmsKeysFromGroup(group)
 		m.VaultKeys = vaultKeysFromGroup(group)
 		m.AzureKeyVaultKeys = azkvKeysFromGroup(group)
+		m.BarbicanKeys = barbicanKeysFromGroup(group)
 		m.AgeKeys = ageKeysFromGroup(group)
 	} else {
 		for _, group := range sopsMetadata.KeyGroups {
@@ -144,6 +154,7 @@ func MetadataFromInternal(sopsMetadata sops.Metadata) Metadata {
 				GCPKMSKeys:        gcpkmsKeysFromGroup(group),
 				VaultKeys:         vaultKeysFromGroup(group),
 				AzureKeyVaultKeys: azkvKeysFromGroup(group),
+				BarbicanKeys:      barbicanKeysFromGroup(group),
 				AgeKeys:           ageKeysFromGroup(group),
 			})
 		}
@@ -233,7 +244,20 @@ func ageKeysFromGroup(group sops.KeyGroup) (keys []agekey) {
 		switch key := key.(type) {
 		case *age.MasterKey:
 			keys = append(keys, agekey{
-				Recipient:        key.Recipient,
+				Recipient: key.Recipient,
+			})
+		}
+	}
+	return
+}
+
+func barbicanKeysFromGroup(group sops.KeyGroup) (keys []barbicankey) {
+	for _, key := range group {
+		switch key := key.(type) {
+		case *barbican.MasterKey:
+			keys = append(keys, barbicankey{
+				SecretHref:       key.SecretHref,
+				CreatedAt:        key.CreationDate.Format(time.RFC3339),
 				EncryptedDataKey: key.EncryptedKey,
 			})
 		}
@@ -295,7 +319,7 @@ func (m *Metadata) ToInternal() (sops.Metadata, error) {
 	}, nil
 }
 
-func internalGroupFrom(kmsKeys []kmskey, pgpKeys []pgpkey, gcpKmsKeys []gcpkmskey, azkvKeys []azkvkey, vaultKeys []vaultkey, ageKeys []agekey) (sops.KeyGroup, error) {
+func internalGroupFrom(kmsKeys []kmskey, pgpKeys []pgpkey, gcpKmsKeys []gcpkmskey, azkvKeys []azkvkey, vaultKeys []vaultkey, barbicanKeys []barbicankey, ageKeys []agekey) (sops.KeyGroup, error) {
 	var internalGroup sops.KeyGroup
 	for _, kmsKey := range kmsKeys {
 		k, err := kmsKey.toInternal()
@@ -325,6 +349,13 @@ func internalGroupFrom(kmsKeys []kmskey, pgpKeys []pgpkey, gcpKmsKeys []gcpkmske
 		}
 		internalGroup = append(internalGroup, k)
 	}
+	for _, barbicanKey := range barbicanKeys {
+		k, err := barbicanKey.toInternal()
+		if err != nil {
+			return nil, err
+		}
+		internalGroup = append(internalGroup, k)
+	}
 	for _, pgpKey := range pgpKeys {
 		k, err := pgpKey.toInternal()
 		if err != nil {
@@ -344,8 +375,8 @@ func internalGroupFrom(kmsKeys []kmskey, pgpKeys []pgpkey, gcpKmsKeys []gcpkmske
 
 func (m *Metadata) internalKeygroups() ([]sops.KeyGroup, error) {
 	var internalGroups []sops.KeyGroup
-	if len(m.PGPKeys) > 0 || len(m.KMSKeys) > 0 || len(m.GCPKMSKeys) > 0 || len(m.AzureKeyVaultKeys) > 0 || len(m.VaultKeys) > 0 || len(m.AgeKeys) > 0 {
-		internalGroup, err := internalGroupFrom(m.KMSKeys, m.PGPKeys, m.GCPKMSKeys, m.AzureKeyVaultKeys, m.VaultKeys, m.AgeKeys)
+	if len(m.PGPKeys) > 0 || len(m.KMSKeys) > 0 || len(m.GCPKMSKeys) > 0 || len(m.AzureKeyVaultKeys) > 0 || len(m.VaultKeys) > 0 || len(m.BarbicanKeys) > 0 || len(m.AgeKeys) > 0 {
+		internalGroup, err := internalGroupFrom(m.KMSKeys, m.PGPKeys, m.GCPKMSKeys, m.AzureKeyVaultKeys, m.VaultKeys, m.BarbicanKeys, m.AgeKeys)
 		if err != nil {
 			return nil, err
 		}
@@ -353,7 +384,7 @@ func (m *Metadata) internalKeygroups() ([]sops.KeyGroup, error) {
 		return internalGroups, nil
 	} else if len(m.KeyGroups) > 0 {
 		for _, group := range m.KeyGroups {
-			internalGroup, err := internalGroupFrom(group.KMSKeys, group.PGPKeys, group.GCPKMSKeys, group.AzureKeyVaultKeys, group.VaultKeys, group.AgeKeys)
+			internalGroup, err := internalGroupFrom(group.KMSKeys, group.PGPKeys, group.GCPKMSKeys, group.AzureKeyVaultKeys, group.VaultKeys, group.BarbicanKeys, group.AgeKeys)
 			if err != nil {
 				return nil, err
 			}
@@ -417,6 +448,18 @@ func (vaultKey *vaultkey) toInternal() (*hcvault.MasterKey, error) {
 		KeyName:      vaultKey.KeyName,
 		CreationDate: creationDate,
 		EncryptedKey: vaultKey.EncryptedDataKey,
+	}, nil
+}
+
+func (barbicanKey *barbicankey) toInternal() (*barbican.MasterKey, error) {
+	creationDate, err := time.Parse(time.RFC3339, barbicanKey.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &barbican.MasterKey{
+		SecretHref:   barbicanKey.SecretHref,
+		EncryptedKey: barbicanKey.EncryptedDataKey,
+		CreationDate: creationDate,
 	}, nil
 }
 
